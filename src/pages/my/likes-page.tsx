@@ -9,6 +9,7 @@ import {
   useContentSelection,
   type ContentItem,
 } from '@/features/explore'
+import { limitCompareForRecommend } from '@/features/recommend'
 import {
   likedAttractionDefaults,
   likedAttractions,
@@ -124,7 +125,11 @@ function LikesTab({ tab, onTabChange }: { tab: Tab; onTabChange: (tab: Tab) => v
           items={compared}
           onRemove={selection.removeCompare}
           actionLabel="코스 추천"
-          onAction={() => navigate('/recommend?step=5')}
+          onAction={() =>
+            navigate('/recommend?step=5', {
+              state: { mustVisitIds: limitCompareForRecommend(selection.compareIds) },
+            })
+          }
           className="right-10 left-10"
         />
       </section>

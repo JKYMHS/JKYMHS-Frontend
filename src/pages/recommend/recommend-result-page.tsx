@@ -27,7 +27,19 @@ function modesOf(day: number): RouteMode[] {
 export default function RecommendResultPage() {
   const [params, setParams] = useSearchParams()
   const pending = params.get('status') === 'pending'
-  const showDone = useCallback(() => setParams({}, { replace: true }), [setParams])
+  // 생성이 끝나면 status만 지우고 result(fallback)는 남긴다
+  const showDone = useCallback(
+    () =>
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('status')
+          return next
+        },
+        { replace: true },
+      ),
+    [setParams],
+  )
   // 다시 추천: 하루 횟수 1회 차감, 직전 결과(최근 1개)로 돌아갈 수 있다 (PRD 003-05)
   const [used, setUsed] = useState(retryQuota.used)
   const [retried, setRetried] = useState(false)
@@ -37,6 +49,7 @@ export default function RecommendResultPage() {
     <ResultView
       key={String(retried)}
       initialSaveOpen={params.get('modal') === 'save'}
+      fallback={params.get('result') === 'fallback'}
       used={used}
       retried={retried}
       onRetry={() => {
@@ -51,12 +64,15 @@ export default function RecommendResultPage() {
 
 function ResultView({
   initialSaveOpen,
+  fallback,
   used,
   retried,
   onRetry,
   onBackToPrevious,
 }: {
   initialSaveOpen: boolean
+  /** AI가 실패해 기본 추천 코스(FALLBACK)를 보여주는 중 */
+  fallback: boolean
   used: number
   retried: boolean
   onRetry: () => void
@@ -101,6 +117,15 @@ function ResultView({
             />
           </div>
           <div className="flex-1 overflow-y-auto px-3 pt-2 pb-[100px]">
+            {fallback && (
+              <div
+                role="status"
+                className="mx-3 mb-2 flex flex-col gap-0.5 rounded-[10px] bg-sky-soft px-3.5 py-2.5 text-[13px]"
+              >
+                <span className="font-semibold text-sky-text">기본 추천 코스예요</span>
+                <span className="text-sub">추천 횟수는 차감되지 않았어요</span>
+              </div>
+            )}
             {retried && (
               <div className="mx-3 mb-2 flex items-center justify-between rounded-[10px] bg-sky-soft px-3.5 py-2.5 text-[13px]">
                 <span className="font-semibold text-sky-text">

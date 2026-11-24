@@ -61,4 +61,11 @@ describe('마이페이지 — 찜한 곳 (06, 06-2) · FUNC-002-06, 08', () => {
       'false',
     )
   })
+
+  it('코스 추천을 누르면 비교 장소를 꼭 포함할 장소로 넘긴다', async () => {
+    const { router } = renderRoute('/my/likes')
+    await userEvent.click(await screen.findByRole('button', { name: '코스 추천' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/recommend'))
+    expect(router.state.location.state).toMatchObject({ mustVisitIds: expect.any(Array) })
+  })
 })
