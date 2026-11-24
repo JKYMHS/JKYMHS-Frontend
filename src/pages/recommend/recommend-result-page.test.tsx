@@ -27,4 +27,25 @@ describe('추천 결과 (09) · FUNC-003-05, 10', () => {
     expect(screen.getByText('북촌 손만두')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: '바꾸기' })).toHaveLength(1)
   })
+
+  it('기본 추천 코스(FALLBACK)면 횟수가 차감되지 않았다고 안내하고, 남은 횟수는 그대로 둔다', async () => {
+    renderRoute('/recommend/r-demo?result=fallback')
+    expect(await screen.findByRole('status')).toHaveTextContent('기본 추천 코스예요')
+    expect(screen.getByRole('status')).toHaveTextContent('추천 횟수는 차감되지 않았어요')
+    expect(screen.getByRole('button', { name: /다시 추천\s*6\/10/ })).toBeInTheDocument()
+  })
+
+  it('AI 코스면 기본 추천 코스 안내가 없다', async () => {
+    renderRoute('/recommend/r-demo')
+    await screen.findByRole('button', { name: /다시 추천/ })
+    expect(screen.queryByText('기본 추천 코스예요')).not.toBeInTheDocument()
+  })
+
+  it('생성 중 화면이 끝나도 FALLBACK 안내가 남는다', { timeout: 30_000 }, async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    renderRoute('/recommend/r-demo?status=pending&result=fallback')
+    expect(await screen.findByText('코스를 짜고 있어요')).toBeInTheDocument()
+    await act(() => vi.advanceTimersByTimeAsync(20_000))
+    expect(await screen.findByText('기본 추천 코스예요')).toBeInTheDocument()
+  })
 })
