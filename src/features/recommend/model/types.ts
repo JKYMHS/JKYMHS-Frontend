@@ -34,4 +34,6 @@ export type RecommendDraft = {
   companionId: string
   indoor: boolean
   mustVisitIds: string[]
+  /** true면 페이스 상한을 무시하고 꼭 포함할 장소를 모두 넣는다 (PRD 003-01 [이대로 짜기]) */
+  allowOverPace: boolean
 }

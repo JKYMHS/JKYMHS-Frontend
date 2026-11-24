@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderRoute } from '@/test/render-route'
 
@@ -23,5 +23,12 @@ describe('탐색 홈 (04)', () => {
     await userEvent.click(await screen.findByRole('button', { name: '한성백제문화제 찜하기' }))
     const dialog = screen.getByRole('dialog', { name: '로그인하고 찜해 두세요' })
     expect(within(dialog).getByText('한성백제문화제')).toBeInTheDocument()
+  })
+
+  it('코스 추천을 누르면 비교 장소를 꼭 포함할 장소로 넘긴다', async () => {
+    const { router } = renderRoute('/explore')
+    await userEvent.click(await screen.findByRole('button', { name: '이 장소들로 코스 추천' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/recommend'))
+    expect(router.state.location.state).toEqual({ mustVisitIds: ['f-bitchorong', 'f-jeongdong'] })
   })
 })

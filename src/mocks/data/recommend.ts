@@ -94,9 +94,11 @@ export const mustVisitSearchPool: MustVisitPlace[] = [
   { id: 'a-deoksu', name: '덕수궁', meta: '서울 중구 · 고궁', period: '상시' },
   { id: 'a-museum', name: '국립중앙박물관', meta: '서울 용산구 · 박물관', period: '상시' },
   { id: 's-cheonggye', name: '청계천', meta: '서울 중구 · 산책로', period: '상시' },
+  { id: 'a-changdeok', name: '창덕궁', meta: '서울 종로구 · 고궁', period: '상시' },
+  { id: 'a-bukchon', name: '북촌한옥마을', meta: '서울 종로구 · 마을', period: '상시' },
+  { id: 'a-gwangjang', name: '광장시장', meta: '서울 종로구 · 시장', period: '상시' },
+  { id: 'a-seoulforest', name: '서울숲', meta: '서울 성동구 · 공원', period: '상시' },
 ]
-export const MUST_VISIT_LIMIT = 5
-
 export const recommendQuota = { left: 7, total: 10 }
 
 export const initialDraft: RecommendDraft = {
@@ -109,4 +111,5 @@ export const initialDraft: RecommendDraft = {
   companionId: 'friends',
   indoor: false,
   mustVisitIds: ['f-jeongdong', 'f-bitchorong'],
+  allowOverPace: false,
 }

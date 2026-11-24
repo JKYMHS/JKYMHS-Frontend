@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib/cn'
 import { Checkbox, SearchMark, WarningText } from '@/shared/ui'
 import type { MustVisitPlace } from '../model/types'
 
-/** 07-5 꼭 포함할 장소 (최대 5곳) */
+/** 07-5 꼭 포함할 장소 (최대 10곳, PRD 8.1) */
 export function MustVisitStep({
   candidates,
   searchPool,
@@ -20,6 +20,8 @@ export function MustVisitStep({
   onChange: (ids: string[]) => void
 }) {
   const [query, setQuery] = useState('')
+  // 한도를 넘겨 담으려 한 적이 있으면 안내한다. 빼서 자리가 나면 사라진다
+  const [triedOver, setTriedOver] = useState(false)
   const q = query.trim()
   const all = [...candidates, ...searchPool.filter((p) => !candidates.some((c) => c.id === p.id))]
   const picked = selectedIds.flatMap((id) => all.find((c) => c.id === id) ?? [])
@@ -40,6 +42,11 @@ export function MustVisitStep({
           </span>
           <span className="text-[13px] text-sub">탐색에서 비교하던 곳을 가져왔어요</span>
         </div>
+        {triedOver && full && (
+          <p role="alert" className="text-[13px] font-semibold text-warn">
+            꼭 포함할 장소는 {limit}개를 넘을 수 없어요
+          </p>
+        )}
         {picked.map((p, i) => (
           <div
             key={p.id}
@@ -99,7 +106,7 @@ export function MustVisitStep({
               size="sm"
               checked={false}
               onCheckedChange={() => {
-                if (full) return
+                if (full) return setTriedOver(true)
                 onChange([...selectedIds, p.id])
                 setQuery('')
               }}

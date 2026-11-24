@@ -1,6 +1,7 @@
 import { RotateCw } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { limitCompareForRecommend } from '@/features/recommend'
 import { LoginRequiredModal, usePreviewSession, type LoginGateReason } from '@/features/auth'
 import {
   CompareTray,
@@ -64,7 +65,9 @@ function ExploreTab({ tab, onTabChange }: { tab: Tab; onTabChange: (tab: Tab) =>
   }
   const onRecommend = () => {
     if (!isLoggedIn) return setGate({ reason: 'compare' })
-    navigate('/recommend?step=5')
+    navigate('/recommend?step=5', {
+      state: { mustVisitIds: limitCompareForRecommend(selection.compareIds) },
+    })
   }
 
   return (

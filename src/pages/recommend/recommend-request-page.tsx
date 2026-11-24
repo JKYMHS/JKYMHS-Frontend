@@ -1,18 +1,22 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import {
   CompanionStep,
   DepartureStep,
+  MUST_VISIT_LIMIT,
   MustVisitStep,
+  OverPaceDialog,
   PeriodStep,
   RegionStep,
+  canExtendTrip,
+  exceedsCapacity,
+  extendTripEnd,
   useCurrentLocation,
   type DepartureOption,
   type RecommendDraft,
 } from '@/features/recommend'
-import { accountDemo } from '@/mocks/data/member'
+import { accountDemo, demoPreferences } from '@/mocks/data/member'
 import {
-  MUST_VISIT_LIMIT,
   calendarMonth,
   calendarPastBefore,
   companionOptions,
@@ -40,6 +44,10 @@ import {
 
 const TOTAL = 5
 
+const knownMustVisitIds = new Set(
+  [...mustVisitCandidates, ...mustVisitSearchPool].map((place) => place.id),
+)
+
 const HEADINGS: Record<number, { title: string; description: string }> = {
   1: { title: '어디로 갈까요?', description: '시·도를 고르고, 원하면 구·군까지 좁혀 주세요.' },
   2: {
@@ -53,7 +61,7 @@ const HEADINGS: Record<number, { title: string; description: string }> = {
   },
   5: {
     title: '꼭 가고 싶은 곳이 있나요?',
-    description: '선택 사항이에요. 최대 5곳까지 코스에 반드시 넣어 드려요.',
+    description: `선택 사항이에요. 최대 ${MUST_VISIT_LIMIT}곳까지 코스에 반드시 넣어 드려요.`,
   },
 }
 
@@ -67,7 +75,14 @@ export default function RecommendRequestPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const step = readStep(params.get('step'))
-  const [draft, setDraft] = useState<RecommendDraft>(initialDraft)
+  // 탐색·찜의 비교 담기에서 넘어오면 비교 장소(처음 10개)로 채운다 (PRD 002-08)
+  const handoff = (useLocation().state as { mustVisitIds?: string[] } | null)?.mustVisitIds
+  const [draft, setDraft] = useState<RecommendDraft>(() =>
+    handoff
+      ? { ...initialDraft, mustVisitIds: handoff.filter((id) => knownMustVisitIds.has(id)) }
+      : initialDraft,
+  )
+  const [overPaceOpen, setOverPaceOpen] = useState(false)
   const [departureQuery, setDepartureQuery] = useState('서울역')
   const [viewMonth, setViewMonth] = useState(calendarMonth)
   const [current, setCurrent] = useState<DepartureOption>()
@@ -93,6 +108,32 @@ export default function RecommendRequestPage() {
   const regionLabel = [region?.name, draft.districts.join(', ')].filter(Boolean).join(' · ')
   const length = draft.start && draft.end ? tripLengthLabel(draft.start, draft.end) : undefined
   const canNext = step !== 2 || Boolean(draft.start && draft.end)
+
+  // 추천 요청. 5단계 입력값은 allowOverPace까지 담아 넘긴다
+  const requestCourse = (next: RecommendDraft) =>
+    navigate('/recommend/r-demo?status=pending', { state: { draft: next } })
+
+  // 꼭 포함할 장소가 여행 일수 × 페이스 상한을 넘으면 확인을 거친다 (PRD 003-01)
+  const overPace =
+    Boolean(draft.start && draft.end) &&
+    exceedsCapacity(draft.mustVisitIds.length, draft.start!, draft.end!, demoPreferences.pace)
+  const onSubmit = () => (overPace ? setOverPaceOpen(true) : requestCourse(draft))
+  // 하루 늘렸는데도 넘으면 모달을 그대로 열어 두고 늘어난 기간으로 다시 묻는다
+  const onExtend = () => {
+    const extended = { ...draft, end: extendTripEnd(draft.end!) }
+    setDraft(extended)
+    if (
+      exceedsCapacity(
+        extended.mustVisitIds.length,
+        extended.start!,
+        extended.end!,
+        demoPreferences.pace,
+      )
+    )
+      return
+    setOverPaceOpen(false)
+    requestCourse(extended)
+  }
 
   // 트레이에는 지금까지 고른 값을 칩으로 모은다 (디자인 07 트레이)
   const chips: ReactNode[] = []
@@ -161,9 +202,7 @@ export default function RecommendRequestPage() {
               다음
             </Button>
           ) : (
-            <Button onClick={() => navigate('/recommend/r-demo?status=pending')}>
-              코스 추천받기
-            </Button>
+            <Button onClick={onSubmit}>코스 추천받기</Button>
           )}
         </>
       }
@@ -241,6 +280,20 @@ export default function RecommendRequestPage() {
           selectedIds={draft.mustVisitIds}
           limit={MUST_VISIT_LIMIT}
           onChange={(mustVisitIds) => update({ mustVisitIds })}
+        />
+      )}
+      {draft.start && draft.end && (
+        <OverPaceDialog
+          open={overPaceOpen}
+          onOpenChange={setOverPaceOpen}
+          count={draft.mustVisitIds.length}
+          periodLabel={tripLengthLabel(draft.start, draft.end)}
+          canExtend={canExtendTrip(draft.start, draft.end)}
+          onExtend={onExtend}
+          onKeep={() => {
+            setOverPaceOpen(false)
+            requestCourse({ ...draft, allowOverPace: true })
+          }}
         />
       )}
       <ConfirmDialog

@@ -92,6 +92,9 @@ export const accountDemo = {
   consents: { location: true, behavior: true, emailAlert: false },
 }
 
+/** 온보딩 취향 예시. 추천 요청의 일정 용량 계산에 페이스를 쓴다 (PRD 003-01) */
+export const demoPreferences: { pace: 'relaxed' | 'packed' } = { pace: 'packed' }
+
 /** 회원 탈퇴 안내 (C-5) */
 export const withdrawSummary = [
   { label: '여행·일정안', value: '5개 여행 · 9개 일정안', mono: true },
